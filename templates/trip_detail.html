@@ -1,0 +1,95 @@
+
+{% extends "base.html" %}
+{% block title %}{{ trip.name }} — PackPal{% endblock %}
+
+{% block header %}
+  <div class="muted">
+    {{ trip.destination }} — {{ trip.start_date }} → {{ trip.end_date }}
+    • {{ trip.temp_profile|capitalize }}
+    • Activities: {{ trip.activities or "—" }}
+    • Laundry: every {{ trip.laundry_every_n_days }} days
+    • {{ "Carry‑on only" if trip.carry_on_only else "Checked bag" }}
+  </div>
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2 style="margin-top:0">{{ trip.name }}</h2>
+  <div class="progress"><div style="width: {{ (packed/total*100) if total else 0 }}%"></div></div>
+  <div class="muted" style="margin-top:.4rem">{{ packed }} / {{ total }} packed</div>
+</section>
+
+<section class="card">
+  <h3 style="margin-top:0">Packing Items</h3>
+
+  {% for cat, items in grouped.items() %}
+    {% if items %}
+      <h4 style="margin:.5rem 0 .25rem 0; display:flex; align-items:center; gap:.5rem;">
+        <span>{{ cat }}</span>
+        <form method="post" action="{{ url_for('mark_category_packed', trip_id=trip.id) }}">
+          <input type="hidden" name="category" value="{{ cat }}" />
+          <button class="btn">Mark all packed</button>
+        </form>
+      </h4>
+      <div class="list">
+        {% for i in items %}
+          <div class="item">
+            <form method="post" action="{{ url_for('toggle_item', item_id=i.id) }}" class="inline">
+              <button class="btn" title="Toggle packed">{{ "✓" if i.packed else "☐" }}</button>
+            </form>
+            <div>
+              <strong>{{ i.name }}</strong>
+              <div class="muted">×{{ i.quantity }}</div>
+            </div>
+            <span class="badge">{{ i.category }}</span>
+            <div class="right">
+              <form method="post" action="{{ url_for('adjust_qty', item_id=i.id) }}" class="inline">
+                <input type="hidden" name="delta" value="-1" />
+                <button class="btn" title="Decrease">−</button>
+              </form>
+              <form method="post" action="{{ url_for('adjust_qty', item_id=i.id) }}" class="inline">
+                <input type="hidden" name="delta" value="1" />
+                <button class="btn" title="Increase">+</button>
+              </form>
+              <form method="post" action="{{ url_for('delete_item', item_id=i.id) }}" class="inline">
+                <button class="btn btn-danger" title="Delete">Delete</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endfor %}
+</section>
+
+<section class="card">
+  <h3 style="margin-top:0">Import/Export</h3>
+  <div class="row">
+    <a class="btn" href="{{ url_for('export_trip', trip_id=trip.id) }}" target="_blank">Export JSON</a>
+    <input id="importFile" type="file" accept="application/json" />
+    <button class="btn" onclick="importJson()">Import</button>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function importJson() {
+  const f = document.getElementById("importFile").files[0];
+  if (!f) return alert("Pick a file first.");
+  try {
+    const text = await f.text();
+    const data = JSON.parse(text);
+    await fetch("{{ url_for('import_trip', trip_id=trip.id) }}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    location.reload();
+  } catch (e) {
+    alert("Import failed: " + e.message);
+  }
+}
+</script>
+{% endblock %}
