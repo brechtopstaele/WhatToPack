@@ -1,49 +1,34 @@
 
 {% extends "base.html" %}
 {% block title %}Plan a Trip — PackPal{% endblock %}
-
 {% block content %}
 <section class="card">
   <h2 style="margin-top:0">Plan your trip</h2>
-  <p class="muted">Pick destination, dates, temperature profile, and activities. We’ll generate a tailored packing list with quantities.</p>
-
   <form method="post" action="{{ url_for('create_and_generate') }}" class="row">
     <input name="name" placeholder="Trip name (optional)" style="min-width:240px" />
     <input name="destination" placeholder="Destination (e.g., Kyoto)" required style="min-width:240px" />
     <input name="start_date" type="date" required />
     <input name="end_date" type="date" required />
-
-    <select name="temp_profile" required>
-      <option value="" disabled selected>Temperature profile</option>
-      {% for t in temp_choices %}
-        <option value="{{ t }}">{{ t|capitalize }}</option>
-      {% endfor %}
-    </select>
-
     <label style="display:flex; align-items:center; gap:.5rem;">
-      Laundry every
-      <input name="laundry_every_n_days" type="number" min="1" value="3" style="width:90px" />
-      days
+      Laundry every <input name="laundry_every_n_days" type="number" min="1" value="3" style="width:90px" /> days
     </label>
-
     <label style="display:flex; align-items:center; gap:.5rem;">
-      <input type="checkbox" name="carry_on_only" checked />
-      Carry‑on only
+      <input type="checkbox" name="carry_on_only" checked /> Carry‑on only
     </label>
-
     <div style="flex-basis:100%; margin-top:.5rem">
       <strong>Activities</strong>
       <div class="row" style="margin-top:.5rem">
         {% for a in activity_choices %}
           <label style="display:flex; align-items:center; gap:.4rem;">
-            <input type="checkbox" name="activities" value="{{ a }}" />
-            {{ a|capitalize }}
+            <input type="checkbox" name="activities" value="{{ a }}" /> {{ a|capitalize }}
           </label>
         {% endfor %}
       </div>
     </div>
-
     <button type="submit" class="btn btn-primary">Generate packing list</button>
   </form>
+  <p class="muted" style="margin-top:.75rem">
+    Tip: set <code>WEATHER_MODE=online</code> to use live geocoding and weather; offline heuristics are used otherwise.
+  </p>
 </section>
 {% endblock %}
