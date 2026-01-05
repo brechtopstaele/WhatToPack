@@ -1,0 +1,220 @@
+
+{% extends "base.html" %}
+{% block title %}{{ trip.name }} — PackPal{% endblock %}
+
+{% block header %}
+  <div class="muted">
+    {{ trip.destination }} — {{ trip.start_date }} → {{ trip.end_date }}
+    • Season: {{ trip.season or "?" }}
+    • Temp: {{ trip.temp_profile or "?" }}
+    {% if trip.avg_temp_c is not none %}• {{ "%.1f"|format(trip.avg_temp_c) }} °C avg{% endif %}
+    {% if trip.precip_mm is not none %}• {{ "%.0f"|format(trip.precip_mm) }} mm precip{% endif %}
+    {% if trip.snowfall_mm is not none %}• {{ "%.0f"|format(trip.snowfall_mm) }} mm snow{% endif %}
+    {% if trip.weather_source %}<span class="badge">{{ trip.weather_source }}</span>{% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>{{ trip.name }}</h2>
+
+  <!-- Progress bar + packed count -->
+  <div class="progress"><div id="progressBarFill"></div></div>
+  <div id="progressText" class="muted">{{ packed }} / {{ total }} packed</div>
+
+  <!-- Regenerate from rules -->
+  <div class="row">
+    <form method="post" action="{{ url_for('main.regenerate_trip_items', trip_id=trip.id) }}">
+      <label>
+        <input type="checkbox" name="replace" checked /> Replace existing items
+      </label>
+      <button class="btn btn-primary" type="submit">Regenerate from rules</button>
+    </form>
+  </div>
+</section>
+
+<section class="card">
+  <h3>Packing Items</h3>
+
+  {% for cat, items in grouped.items() %}
+    {% if items %}
+      <h4>
+        <span>{{ cat }}</span>
+
+        <!-- This category-wide action still posts to server (optional).
+             You could also convert it to fetch if you add an /api endpoint. -->
+        <form method="post" action="{{ url_for('main.mark_category_packed', trip_id=trip.id) }}">
+          <input type="hidden" name="category" value="{{ cat }}" />
+          <button class="btn">Mark all packed</button>
+        </form>
+      </h4>
+
+      <div class="list">
+        {% for i in items %}
+          <!-- Each row carries its item id in data attributes -->
+          <div class="item{% if i.packed %} is-packed{% endif %}" id="item-{{ i.id }}" data-item-id="{{ i.id }}">
+            <!-- Toggle packed (AJAX) -->
+            <button class="btn toggle-packed" title="Toggle packed">{{ "✓" if i.packed else "☐" }}</button>
+
+            <div>
+              <strong class="item-name">{{ i.name }}</strong>
+              <div class="muted">×<span class="item-qty">{{ i.quantity }}</span></div>
+            </div>
+
+            <span class="badge">{{ i.category }}</span>
+
+            <div class="right">
+              <!-- Quantity -/+ (AJAX) -->
+              <button class="btn qty-dec" title="Decrease">−</button>
+              <button class="btn qty-inc" title="Increase">+</button>
+
+              <!-- Delete (AJAX) -->
+              <button class="btn btn-danger delete-item" title="Delete">Delete</button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endfor %}
+</section>
+
+<section class="card">
+  <h3>Import/Export Items</h3>
+  <div class="row">
+    <form method="get" action="{{ url_for('main.export_trip', trip_id=trip.id) }}">
+      <button class="btn">Export JSON</button>
+    </form>
+    <input id="importFile" type="file" accept="application/json" />
+    <button class="btn" id="importBtn">Import</button>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  const tripId = {{ trip.id }};
+  const progressBarFill = document.getElementById("progressBarFill");
+  const progressText = document.getElementById("progressText");
+
+  function updateProgress(packed, total) {
+    const pct = total ? Math.round((packed / total) * 100) : 0;
+    if (progressBarFill) progressBarFill.style.width = pct + "%";
+    if (progressText) progressText.textContent = `${packed} / ${total} packed`;
+  }
+
+  async function postJSON(url, bodyObj) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: bodyObj ? JSON.stringify(bodyObj) : null
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status} ${txt}`);
+    }
+    return res.json();
+  }
+
+  // Toggle packed (no reload)
+  document.querySelectorAll(".toggle-packed").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const row = e.target.closest(".item");
+      const itemId = row.dataset.itemId;
+
+      // optimistic UI (optional): disable briefly
+      btn.disabled = true;
+
+      try {
+        const data = await postJSON(`/api/items/${itemId}/toggle`);
+        // Update icon ✓ / ☐ and row style
+        btn.textContent = data.packed ? "✓" : "☐";
+        row.classList.toggle("is-packed", data.packed);
+        // Update progress
+        if (data.progress) updateProgress(data.progress.packed, data.progress.total);
+      } catch (err) {
+        console.error(err);
+        alert("Toggle failed; please try again.");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // Quantity +/- (no reload)
+  document.querySelectorAll(".qty-dec, .qty-inc").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const row = e.target.closest(".item");
+      const itemId = row.dataset.itemId;
+      const delta = e.target.classList.contains("qty-inc") ? 1 : -1;
+
+      // optimistic UI (optional): disable briefly
+      btn.disabled = true;
+
+      try {
+        const data = await postJSON(`/api/items/${itemId}/qty`, { delta });
+        row.querySelector(".item-qty").textContent = data.quantity;
+      } catch (err) {
+        console.error(err);
+        alert("Quantity update failed; please try again.");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // Delete item (no reload)
+  document.querySelectorAll(".delete-item").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const row = e.target.closest(".item");
+      const itemId = row.dataset.itemId;
+
+      if (!confirm("Delete this item?")) return;
+
+      // optimistic UI (optional): disable briefly
+      btn.disabled = true;
+
+      try {
+        const data = await postJSON(`/api/items/${itemId}/delete`);
+        // Remove row from DOM
+        row.remove();
+        // Update progress if server returned it
+        if (data.progress) updateProgress(data.progress.packed, data.progress.total);
+      } catch (err) {
+        console.error(err);
+        alert("Delete failed; please try again.");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // Import items (existing server route; keeps a tiny fetch UX)
+  document.getElementById("importBtn")?.addEventListener("click", async () => {
+    const f = document.getElementById("importFile").files[0];
+    if (!f) return alert("Pick a file first.");
+
+    try {
+      const text = await f.text();
+      const data = JSON.parse(text);
+
+      // Reuse existing server route (it redirects). We can do a fetch & reload.
+      const res = await fetch(`{{ url_for('main.import_trip', trip_id=trip.id) }}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      // After import, reload to see the new rows.
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      location.reload();
+    } catch (e) {
+      alert("Import failed: " + e.message);
+    }
+  });
+})();
+</script>
+{% endblock %}

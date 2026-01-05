@@ -1,0 +1,34 @@
+
+{% extends "base.html" %}
+{% block title %}Plan a Trip — PackPal{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Plan your trip</h2>
+  <form method="post" action="{{ url_for('main.create_and_generate') }}" class="row">
+    <input name="name" placeholder="Trip name (optional)"/>
+    <input name="destination" placeholder="Destination (e.g., Kyoto)" required />
+    <input name="start_date" type="date" required />
+    <input name="end_date" type="date" required />
+    <label>
+      Laundry every <input name="laundry_every_n_days" type="number" min="1" value="3" /> days
+    </label>
+    <label>
+      <input type="checkbox" name="carry_on_only" checked /> Carry‑on only
+    </label>
+    <div>
+      <strong>Activities</strong>
+      <div class="row">
+        {% for a in activity_choices %}
+          <label>
+            <input type="checkbox" name="activities" value="{{ a }}" /> {{ a|capitalize }}
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Generate packing list</button>
+  </form>
+  <p class="muted">
+    Tip: set <code>WEATHER_MODE=online</code> to use live geocoding and weather; offline heuristics are used otherwise.
+  </p>
+</section>
+{% endblock %}

@@ -1,0 +1,42 @@
+
+{% extends "base.html" %}
+{% block title %}Trips — PackPal{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Your Trips</h2>
+  <p>Create a new trip on the <a href="{{ url_for('main.plan') }}">Plan</a> page. Manage rules on the <a href="{{ url_for('rules.rules_page') }}">Rules</a> page.</p>
+
+  {% if trips %}
+    <div class="list">
+      {% for t in trips %}
+        <div class="item">
+          <div>
+            <h3><a href="{{ url_for('main.trip_detail', trip_id=t.id) }}">{{ t.name }}</a></h3>
+            <div class="trip_info">{{ t.destination }} — {{ t.start_date }} → {{ t.end_date }}</div>
+          </div>
+          <div class="right">
+            <div>
+              <span class="badge">Season: {{ t.season or "?" }}</span>
+              <span class="badge">Temperature: {{ t.temp_profile or "?" }}</span>
+              {% if t.avg_temp_c is not none %}<span class="badge">{{ "%.1f"|format(t.avg_temp_c) }} °C average</span>{% endif %}
+              {% if t.precip_mm is not none %}<span class="badge">{{ "%.0f"|format(t.precip_mm) }} mm precip</span>{% endif %}
+              {% if t.snowfall_mm is not none %}<span class="badge">{{ "%.0f"|format(t.snowfall_mm) }} mm snow</span>{% endif %}
+            </div>
+            <div>
+              <span class="badge packed">{{ counts[t.id].packed }}/{{ counts[t.id].total }} items packed</span>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="item">
+      <p>No trips yet. <a href="{{ url_for('main.plan') }}">Plan your first trip</a>.</p>
+    </div>
+  {% endif %}
+</section>
+<section class="card">
+  <h2>Guide to WhatToPack</h2>
+  <p>WhatToPack is a tool to help you plan your packing for trips. Create a new trip on the <a href="{{ url_for('main.plan') }}">Plan</a> page, where you can enter the amount of days and destination, as well as other information to provide an adapted packing list. Manage rules on the <a href="{{ url_for('rules.rules_page') }}">Rules</a> page.</p>
+</section>
+{% endblock %}
