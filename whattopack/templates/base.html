@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% block title %}PackPal — Smart Packing{% endblock %}</title>
+  <title>{% block title %}WhatToPack{% endblock %}</title>
 
   <!-- App stylesheet -->
   <link
@@ -23,9 +23,6 @@
         <a href="{{ url_for('main.list_trips') }}">Trips</a>
         <a href="{{ url_for('main.plan') }}">Plan</a>
         <a href="{{ url_for('rules.rules_page') }}">Rules</a>
-	<form action="{{ url_for('main.toggle_weather') }}" method="post">
-	  <button class="btn">{{ 'Disable Weather' if weather_mode=='online' else 'Enable Weather' }}</button>
-	</form>
       </nav>
     </div>
   </header>
@@ -41,6 +38,13 @@
     {% endwith %}
     {% block content %}{% endblock %}
   </main>
-  {% block scripts %}{% endblock %}
+  <!-- Flatpickr (CDN) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- Mapbox GL JS (CDN) -->
+  <script id="search-js" defer src="https://api.mapbox.com/search-js/v1.5.0/web.js"></script>
+  {% block scripts %}
+  {% endblock %}
 </body>
 </html>
+

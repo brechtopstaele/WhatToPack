@@ -23,7 +23,7 @@
               {% if t.snowfall_mm is not none %}<span class="badge">{{ "%.0f"|format(t.snowfall_mm) }} mm snow</span>{% endif %}
             </div>
             <div>
-              <span class="badge packed">{{ counts[t.id].packed }}/{{ counts[t.id].total }} items packed</span>
+              <span class="badge packed">{{ counts[t.id].packed }}/{{ counts[t.id].total }} items packed</span> <!--TODO: dynamically change color based on items packed-->
             </div>
           </div>
         </div>

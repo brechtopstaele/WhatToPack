@@ -9,6 +9,7 @@ from ..domain.util import days_between, infer_meteorological_season, decide_temp
 from ..domain.engine import RuleEngine
 from ..services.rules_storage import load_rules, get_weather_mode, set_weather_mode
 from ..services.weather import geocode_location_nominatim, fetch_weather_open_meteo
+import os
 
 bp = Blueprint("main", __name__)
 
@@ -30,9 +31,10 @@ def list_trips():
     }
     return render_template("trips.html", trips=trips, counts=counts)
 
+MAPBOX_TOKEN = os.environ.get("MAPBOX_ACCESS_TOKEN")  # public-scoped token for client
 @bp.get("/plan", endpoint="plan")
 def plan():
-    return render_template("plan.html", activity_choices=ACTIVITY_CHOICES)
+    return render_template("plan.html", activity_choices=ACTIVITY_CHOICES, MAPBOX_TOKEN=MAPBOX_TOKEN)
 
 @bp.post("/plan")
 def create_and_generate():

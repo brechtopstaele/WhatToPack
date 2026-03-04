@@ -7,6 +7,7 @@ from .extensions import db
 from .models import Trip, Item  # ensure models are imported for create_all
 from .blueprints.main import bp as main_bp
 from .blueprints.rules import bp as rules_bp
+from .blueprints.geocode import bp as geocode_bp
 from .services.rules_storage import get_weather_mode
 
 
@@ -36,6 +37,7 @@ def create_app() -> Flask:
     # Register blueprints
     app.register_blueprint(main_bp)
     app.register_blueprint(rules_bp)
+    app.register_blueprint(geocode_bp)
 
     # Context processor: inject weather_mode into all templates
     @app.context_processor

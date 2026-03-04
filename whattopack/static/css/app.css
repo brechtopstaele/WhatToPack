@@ -44,6 +44,7 @@ body {
   font: 16px/1.5 "Inter", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
   color: var(--text);
   background: var(--bg);
+  box-shadow: none;
 }
 
 a {
@@ -69,16 +70,14 @@ a {
   padding: var(--spacing-5);
 }
 
-.list{
+.item{
     color: var(--text);
     background: var(--primary);
     padding: var(--spacing-5);
-}
-
-.item{
     overflow: auto;
     display: flex;
     color: var(--text);
+    margin-bottom: var(--spacing-4);
 }
 
 .trip_info{
@@ -104,7 +103,7 @@ h3 { font-size: 1.25rem; }
 /* Grid utilities */
 .grid { display: grid; gap: var(--spacing-4); }
 .grid-2 { grid-template-columns: 1fr 1fr; }
-.row { display: grid; gap: var(--spacing-4); grid-template-columns: 1.2fr 0.8fr; }
+.row { gap: var(--spacing-4); grid-template-columns: 1.2fr 0.8fr; }
 
 @media (max-width: 680px) {
   .grid-2, .row { grid-template-columns: 1fr; }
@@ -162,13 +161,22 @@ input[type="text"],
 input[type="date"],
 input[type="number"],
 select,
-textarea {
+textarea
+.mapbox-search-box {
   width: 100%;
   padding: var(--spacing-3) var(--spacing-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border: 3px solid var(--primary) !important;
+  border-radius: 0 !important;
   background: var(--surface);
-  color: var(--text);
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 1rem;
+  height: auto;
+  margin-bottom: var(--spacing-4);
+}
+
+input[type="number"] {
+  width: 4rem;
 }
 
 input::placeholder { color: var(--text-muted); }
@@ -181,9 +189,20 @@ input::placeholder { color: var(--text-muted); }
 .checkbox-group {
   display: grid;
   gap: var(--spacing-3);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
 }
 .checkbox-item { display: flex; align-items: center; gap: var(--spacing-2); }
+
+.activities {
+  margin-top: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+/* date picker */
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.selected.inRange, .flatpickr-day.startRange.inRange, .flatpickr-day.endRange.inRange, .flatpickr-day.selected:focus, .flatpickr-day.startRange:focus, .flatpickr-day.endRange:focus, .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover, .flatpickr-day.selected.prevMonthDay, .flatpickr-day.startRange.prevMonthDay, .flatpickr-day.endRange.prevMonthDay, .flatpickr-day.selected.nextMonthDay, .flatpickr-day.startRange.nextMonthDay, .flatpickr-day.endRange.nextMonthDay {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
 
 /* Buttons */
 button, .btn {
@@ -198,9 +217,10 @@ button, .btn {
   background-color: var(--primary-contrast);
 }
 
-button.primary, .btn.primary {
-  background: var(--primary);
-  color: var(--primary-contrast);
+button.primary, .btn-primary {
+  background: var(--primary-contrast);
+  color: var(--surface);
+  font-size: large;
 }
 
 button.primary:disabled { opacity: .6; cursor: not-allowed; }
@@ -230,11 +250,10 @@ button.primary:disabled { opacity: .6; cursor: not-allowed; }
 
 /* Focus & accessibility */
 :focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--primary) 60%, transparent);
-  outline-offset: 2px;
+  outline: 3px solid color-mix(in srgb, var(--primary) 80%, transparent);
 }
 a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-  border-color: var(--primary);
+  outline-color: var(--primary);
 }
 
 /* Tables (if you have any results listing) */

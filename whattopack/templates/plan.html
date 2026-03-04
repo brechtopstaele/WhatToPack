@@ -1,23 +1,22 @@
 
 {% extends "base.html" %}
-{% block title %}Plan a Trip — PackPal{% endblock %}
+{% block title %}Plan a Trip — WhatToPack{% endblock %}
 {% block content %}
 <section class="card">
   <h2>Plan your trip</h2>
-  <form method="post" action="{{ url_for('main.create_and_generate') }}" class="row">
-    <input name="name" placeholder="Trip name (optional)"/>
-    <input name="destination" placeholder="Destination (e.g., Kyoto)" required />
-    <input name="start_date" type="date" required />
-    <input name="end_date" type="date" required />
-    <label>
-      Laundry every <input name="laundry_every_n_days" type="number" min="1" value="3" /> days
-    </label>
-    <label>
-      <input type="checkbox" name="carry_on_only" checked /> Carry‑on only
-    </label>
-    <div>
-      <strong>Activities</strong>
-      <div class="row">
+  <form method="post" action="{{ url_for('main.create_and_generate') }}" class="list">
+    <input name="name" type="text" placeholder="Trip name (optional)" autocomplete="off"/>
+    <!-- <input name="destination" type="text" placeholder="Destination" required autocomplete="address-line1"/> -->
+    <mapbox-search-box name="destination" type="text" class="mapbox-search-box"></mapbox-search-box>
+    <label for="trip_range"><h3>Trip date</h3></label>
+    <input id="trip_range" type="text" class="date-input" placeholder="Select date range" />
+    <input type="hidden" id="start_date" name="start_date" />
+    <input type="hidden" id="end_date" name="end_date" />
+    <label> Laundry every <input name="laundry_every_n_days" type="number" min="1" value="3" /> days </br></label>
+    <label><input type="checkbox" name="carry_on_only" checked /> Carry-on only </label>
+    <div class="activities">
+      <h3>Activities</h3>
+      <div class="checkbox-group">
         {% for a in activity_choices %}
           <label>
             <input type="checkbox" name="activities" value="{{ a }}" /> {{ a|capitalize }}
@@ -27,8 +26,114 @@
     </div>
     <button type="submit" class="btn btn-primary">Generate packing list</button>
   </form>
-  <p class="muted">
-    Tip: set <code>WEATHER_MODE=online</code> to use live geocoding and weather; offline heuristics are used otherwise.
-  </p>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<!-- Flatpickr -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    flatpickr("#trip_range", {
+        mode: "range",
+        altInput: true,
+        altFormat: "d/m/Y",
+        dateFormat: "Y-m-d",
+        allowInput: true,
+        minDate: "today",
+        onChange: (dates, _str, fp) => {
+          // dates[0] = start, dates[1] = end (when picked)
+          const startEl = document.getElementById("start_date");
+          const endEl   = document.getElementById("end_date");
+          startEl.value = dates[0] ? fp.formatDate(dates[0], "Y-m-d") : "";
+          endEl.value   = dates[1] ? fp.formatDate(dates[1], "Y-m-d") : "";
+        }
+      });
+    });
+</script>
+
+<!-- Mapbox -->
+<script>
+    const script = document.getElementById('search-js');
+    // wait for the Mapbox Search JS script to load before using it
+    script.onload = function () {
+      // select the MapboxSearchBox instance
+        const searchBox = document.querySelector('mapbox-search-box')
+        searchBox.theme = {
+          variables: {  
+            // Typography & spacing
+            unit: '14px',
+            fontFamily: 'Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
+            fontSize: '16px',
+            padding: 'var(--spacing-3)',  // 0.75rem
+
+            // Colors (from app.css tokens)
+            colorText: 'var(--primary)',
+            colorSecondary: 'var(--text-muted)',
+            colorBackground: 'none',
+            colorBackgroundHover: '#f6f8fa',
+            colorBackgroundActive: '#e8ebee',
+            colorPrimary: 'var(--primary)',
+            border: 'none',
+
+            // Corners and elevation
+            borderRadius: 'var(--radius-sm)',
+            boxShadow: 'none',
+          },
+          cssText: `
+            /* Root input field inside the component */
+            .Input,
+            .Input input,
+            .Input textarea {
+              font-size: 16px;
+              line-height: 1.5;
+            }
+          
+            .Input {
+              min-height: 40px;
+            }
+              
+            /* Hide built-in search icon; you have a clean field look */
+            .SearchIcon { display: none; }
+
+            /* Results listbox styling */
+            .Results {
+              max-height: 320px;
+              border: 1px solid var(--primary);
+              border-radius: var(--radius-sm);
+              box-shadow: var(--shadow);
+              background: var(--surface);
+            }
+
+            /* Result item styles */
+            .ItemTitle { font-weight: 600; color: var(--primary); }
+            .ItemSubtitle { color: var(--text-muted); }
+            .Item:hover { background: #f6f8fa; }
+            .Item:active { background: #e8ebee; }
+
+            /* Remove dotted outline on the host element */
+            :host(:focus) { outline: none; }
+            :host(:focus-visible) { outline: none; }
+
+            :focus-visible {
+              outline: none;
+            }
+            
+            .ActionIcon {
+              transform: translateY(-0.5rem);
+            }
+          `
+        };
+
+        // set the options property
+        searchBox.options = {
+          types: ['country', 'region', 'postcode', 'district', 'place', 'locality'],
+        }
+
+        // add an event listener to handle the `retrieve` event
+        searchBox.addEventListener('retrieve', (e) => {
+            const feature = e.detail;
+            console.log(feature) // geojson object representing the selected item
+        });
+      };
+</script>
 {% endblock %}
