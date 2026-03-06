@@ -6,8 +6,11 @@
   <h2>Plan your trip</h2>
   <form method="post" action="{{ url_for('main.create_and_generate') }}" class="list">
     <input name="name" type="text" placeholder="Trip name (optional)" autocomplete="off"/>
+    <input name="destination.value" type="hidden" id="destination_value"/>
+    <input name="destination.lat" type="hidden" id="destination_lat">
+    <input name="destination.lon" type="hidden" id="destination_lon">
     <!-- <input name="destination" type="text" placeholder="Destination" required autocomplete="address-line1"/> -->
-    <mapbox-search-box name="destination" type="text" class="mapbox-search-box"></mapbox-search-box>
+    <mapbox-search-box name="destination" type="text" id="destinationSearch" class="mapbox-search-box"></mapbox-search-box>
     <label for="trip_range"><h3>Trip date</h3></label>
     <input id="trip_range" type="text" class="date-input" placeholder="Select date range" />
     <input type="hidden" id="start_date" name="start_date" />
@@ -136,4 +139,45 @@
         });
       };
 </script>
+
+<!--Mapbox input field scraper-->
+<script>
+  window.addEventListener('load', () => {
+    const sb = document.getElementById('destinationSearch');
+    const fText = document.getElementById('destination_value');
+    const fLat  = document.getElementById('destination_lat');
+    const fLon  = document.getElementById('destination_lon');
+
+    // When a suggestion is chosen, Search Box fires 'retrieve' with full features (incl. geometry)
+    sb.addEventListener('retrieve', (e) => {
+      const feature = (e.detail && e.detail.features && e.detail.features[0]) || null;
+      if (!feature) return;
+
+      // Prefer a nice display string; fallback to control's value
+      const label =
+        feature.properties?.name ||
+        feature.properties?.full_address ||
+        sb.value ||
+        '';
+
+      fText.value = label;
+
+      const coords = feature.geometry?.coordinates;
+      if (Array.isArray(coords) && coords.length >= 2) {
+        const [lng, lat] = coords;
+        fLat.value = Number(lat).toString();
+        fLon.value = Number(lng).toString();
+      }
+    });
+
+    // If user types but never clicks a suggestion, ensure we still submit the typed value
+    const form = sb.closest('form');
+    form.addEventListener('submit', () => {
+      if (!fText.value) {
+        fText.value = sb.value || '';
+      }
+    });
+  });
+</script>
+
 {% endblock %}

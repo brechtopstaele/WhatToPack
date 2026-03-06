@@ -39,7 +39,7 @@ def plan():
 @bp.post("/plan")
 def create_and_generate():
     name = (request.form.get("name") or "").strip()
-    destination = (request.form.get("destination") or "").strip()
+    destination = (request.form.get("destination.value") or request.form.get("destination") or "").strip()
     start = request.form.get("start_date")
     end = request.form.get("end_date")
     laundry_n = int(request.form.get("laundry_every_n_days") or 3)
@@ -48,7 +48,7 @@ def create_and_generate():
 
     if not destination or not start or not end:
         flash("Destination and both dates are required.", "error")
-        return redirect(url_for("plan"))
+        return redirect(url_for("main.plan"))
 
     try:
         start_date = datetime.strptime(start, "%Y-%m-%d").date()
@@ -57,28 +57,40 @@ def create_and_generate():
             raise ValueError("End date must be after start date.")
     except Exception as e:
         flash(f"Invalid dates: {e}", "error")
-        return redirect(url_for("plan"))
+        return redirect(url_for("main.plan"))
 
     # Weather/season inference
-    lat = lon = None
+    lat_form = request.form.get("destination.lat")
+    lon_form = request.form.get("destination.lon")
+    lat = float(lat_form) if lat_form else None
+    lon = float(lon_form) if lon_form else None
+
     avg_c = precip = snow = None
     season = "autumn"
     weather_source = "none"
 
     mode = get_weather_mode()
-    if mode == "online":
-        coords = geocode_location_nominatim(destination)
-        if coords:
-            lat, lon = coords
-            season = infer_meteorological_season(lat, start_date)
-            avg_c, precip, snow = fetch_weather_open_meteo(lat, lon, start_date, end_date)
-            weather_source = "open-meteo"
+    
+    if lat is not None and lon is not None and mode == "online":
+        # We already have precise coords from Mapbox Search Box; no need to geocode again
+        season = infer_meteorological_season(lat, start_date)
+        avg_c, precip, snow = fetch_weather_open_meteo(lat, lon, start_date, end_date)
+        weather_source = "open-meteo"
+    else:
+        # Original fallback path
+        if mode == "online":
+            coords = geocode_location_nominatim(destination)
+            if coords:
+                lat, lon = coords
+                season = infer_meteorological_season(lat, start_date)
+                avg_c, precip, snow = fetch_weather_open_meteo(lat, lon, start_date, end_date)
+                weather_source = "open-meteo"
+            else:
+                season = infer_meteorological_season(None, start_date)
+                weather_source = "heuristic"
         else:
             season = infer_meteorological_season(None, start_date)
             weather_source = "heuristic"
-    else:
-        season = infer_meteorological_season(None, start_date)
-        weather_source = "heuristic"
 
     temp_profile = decide_temp_profile(avg_c)
 
